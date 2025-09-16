@@ -8,7 +8,6 @@ git clone https://github.com/antoine-le-calloch/followup-request-listener.git
 cd followup-request-listener
 pip install -r requirements.txt
 cp .env.default .env
-python followup_request_listener.py
 ```
 
 ## Configuration
@@ -18,3 +17,8 @@ Edit the `.env` file to set your configuration:
 - `ALLOCATION_ID`: The ID of the allocation where the follow-up requests will be created.
 - `LATITUDE`: Your observatory's latitude.
 - `LONGITUDE`: Your observatory's longitude.
+
+## Running the Service
+```bash
+python followup_request_listener.py
+```
