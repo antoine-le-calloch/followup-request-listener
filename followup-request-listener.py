@@ -1,52 +1,37 @@
 import os
 import time
-import pytz
 
 from datetime import datetime, timedelta
-from astral import LocationInfo
-from astral.sun import sun
-from timezonefinder import TimezoneFinder
+from time import sleep
+
 from dotenv import load_dotenv
+from api import SkyPortal
+from utils import is_night, timezone, get_next_sunset, get_next_sunrise
 
 load_dotenv()
-# SkyPortal utilities
+
 skyportal_url = os.getenv("SKYPORTAL_URL")
 skyportal_api_key = os.getenv("SKYPORTAL_API_KEY")
-
-# Position of the observatory
-latitude = float(os.getenv("LATITUDE"))
-longitude = float(os.getenv("LONGITUDE"))
-
-timezone_str = TimezoneFinder().timezone_at(lat=latitude, lng=longitude)
-timezone = pytz.timezone(timezone_str)
-observer = LocationInfo(latitude=latitude, longitude=longitude, timezone=timezone_str).observer
-
-def get_sun(date):
-    """Return sun information for the given date"""
-    return sun(observer, date=date, tzinfo=timezone)
+allocation_id = os.getenv("ALLOCATION_ID")
 
 
-def is_night(date):
-    """Return True if it's currently nighttime"""
-    s = get_sun(date)
-    return s["sunset"] <= date or date <= s["sunrise"]
-
-def get_next_sunset(date):
-    """Return the next sunset time"""
-    s = get_sun(date)
-    if date < s["sunset"]:
-        return s["sunset"]
-    else:
-        s = get_sun(date + timedelta(days=1))
-        return s["sunset"]
-
-
-def retrieve_followup_requests():
+def retrieve_followup_requests(payload):
     """Function to retrieve new follow-up requests from skyportal"""
-    print("Retrieving follow-up requests...")
+    status, data = skyportal.get_followup_requests(payload)
+    if status != 200 or 'data' not in data:
+        print(f"Error fetching follow-up requests: {data}")
+        return None
+    return data['data']['followup_requests']
 
 
 if __name__ == '__main__':
+    skyportal = SkyPortal(instance=skyportal_url, token=skyportal_api_key)
+    last_refresh_date=datetime.utcnow() - timedelta(days=5) # update initial lookback time here
+    payload = {
+        "allocationID": allocation_id,
+        "startDate": last_refresh_date,
+        "status": "submitted"
+    }
     while True:
         now = datetime.now(timezone)
         if not is_night(now):
@@ -56,4 +41,16 @@ if __name__ == '__main__':
             time.sleep(wait_time)
             continue
 
-        print(f"Listening for follow-up requests...")
+        rise_time = get_next_sunrise(now)
+        print(f"Listening for follow-up requests until sunrise at {rise_time}")
+        while datetime.now(timezone) < rise_time:
+            last_refresh_date=datetime.utcnow() # update last refresh time
+            followup_requests=retrieve_followup_requests(payload)
+            if followup_requests is None:
+                sleep(30)
+                continue
+
+            #TODO: process follow-up requests here
+
+            payload["startDate"] = last_refresh_date # update start date for next query
+            sleep(20)
