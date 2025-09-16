@@ -1,6 +1,6 @@
 # Followup Request Listener
 
-A simple Python service that listens for follow-up requests during the night and wait during the day.
+A simple Python service that listens for skyportal follow-up requests during the night and wait during the day.
 
 ## Setup
 ```bash
