@@ -2,3 +2,4 @@ astral
 timezonefinder
 python-dotenv
 requests
+pytz
