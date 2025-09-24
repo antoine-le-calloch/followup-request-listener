@@ -27,7 +27,7 @@ class SkyPortal:
 
     def __init__(self, instance, token, port=443, validate=True):
         # build the base URL from the protocol, host, and port
-        self.base_url = f'{instance}'
+        self.base_url = f'{instance.rstrip("/")}'
         if port not in ['None', '', 80, 443]:
             self.base_url += f':{port}'
         
